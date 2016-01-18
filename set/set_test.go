@@ -44,6 +44,16 @@ func TestAdd(t *testing.T) {
     if err := s.Add(4); err != nil {
         t.Fail()
     }
+    // Assume other methods not under test work
+    if sz, _ := s.Size(); sz != 1 {
+        t.Fail()
+    }
+
+    // Repeat to test set property of uniqueness
+    if err := s.Add(4); err != nil {
+        t.Fail()
+    }
+    // Assume other methods not under test work
     if sz, _ := s.Size(); sz != 1 {
         t.Fail()
     }
@@ -226,12 +236,12 @@ func TestRemoveAll(t *testing.T) {
 func BenchmarkRemoveAll(b *testing.B) {
     sets := make([]Set, b.N)
     keys := make([][]interface{}, b.N)
-    data := genKeyData(1000)
+    data := genKeyData(100)
 
     for i := 0; i < b.N; i++ {
         sets[i] = New()
         sets[i].AddAll(data...)
-        keys[i] = genKeyData(1000)
+        keys[i] = genKeyData(100)
     }
 
     b.ResetTimer()
@@ -285,8 +295,110 @@ func BenchmarkClear(b *testing.B) {
     }
 }
 
-//size
+func TestSize(t *testing.T) {
+    s := New()
+    s.Add(4)
+    size, err := s.Size()
+    if err != nil {
+        t.Fail()
+    }
+    if size != 1 {
+        t.Fail()
+    }
+}
 
-//isEmpty
+func BenchmarkSize(b *testing.B) {
+    s := New()
+    s.AddAll(genKeyData(1000)...)
+    b.ResetTimer()
 
-//toslice
+    for i := 0; i < b.N; i++ {
+        if _, err := s.Size(); err != nil {
+            b.Fail()
+        }
+    }
+}
+
+func TestIsEmpty(t *testing.T) {
+    s := New()
+
+    empty, err := s.IsEmpty()
+    if err != nil {
+        t.Fail()
+    }
+    if !empty {
+        t.Fail()
+    }
+
+    s.Add(4)
+
+    empty, err = s.IsEmpty()
+    if err != nil {
+        t.Fail()
+    }
+    if empty {
+        t.Fail()
+    }
+}
+
+func BenchmarkIsEmpty(b *testing.B) {
+    s1 := New()
+    s2 := New()
+    s2.AddAll(genKeyData(1000)...)
+    b.ResetTimer()
+
+    for i := 0; i < b.N/2; i++ {
+        empty, err := s1.IsEmpty()
+        if err != nil {
+            b.Fail()
+        }
+        if !empty {
+            b.Fail()
+        }
+    }
+
+    for i := 0; i < b.N/2; i++ {
+        empty, err := s2.IsEmpty()
+        if err != nil {
+            b.Fail()
+        }
+        if empty {
+            b.Fail()
+        }
+    }
+}
+
+func TestToSlice(t *testing.T) {
+    s := New()
+    s.Add(4)
+
+    slice, err := s.ToSlice()
+    if err != nil {
+        t.Fail()
+    }
+    if len(slice) != 1 {
+        t.Fail()
+    }
+
+    s.Add(5)
+
+    slice, err = s.ToSlice()
+    if err != nil {
+        t.Fail()
+    }
+    if len(slice) != 2 {
+        t.Fail()
+    }
+}
+
+func BenchmarkToSlice(b *testing.B) {
+    s := New()
+    s.AddAll(genKeyData(100)...)
+    b.ResetTimer()
+
+    for i := 0; i < b.N; i++ {
+        if _, err := s.ToSlice(); err != nil {
+            b.Fail()
+        }
+    }
+}
