@@ -20,6 +20,13 @@ func genKeyData(num int) []interface{} {
     return ret
 }
 
+func fillSets(s []Set) {
+    data := genKeyData(100)
+    for i := 0; i < len(s); i++ {
+        s[i].AddAll(data...)
+    }
+}
+
 // Tests
 
 func TestNewSet(t *testing.T) {
@@ -64,11 +71,10 @@ func TestAddAll(t *testing.T) {
 
 func BenchmarkAddAll(b *testing.B) {
     s := New()
-    for i := 0; i < b.N; i++ {
-        b.StopTimer()
-        data := genKeyData(1000)
-        b.StartTimer()
+    data := genKeyData(1000)
+    b.ResetTimer()
 
+    for i := 0; i < b.N; i++ {
         if err := s.AddAll(data...); err != nil {
             b.Fail()
         }
@@ -176,6 +182,8 @@ func TestRemove(t *testing.T) {
     }
 }
 
+// Not perfect because different implementations might
+// be slower the larger it gets
 func BenchmarkRemove(b *testing.B) {
     sets := make([]Set, b.N)
 
@@ -218,10 +226,11 @@ func TestRemoveAll(t *testing.T) {
 func BenchmarkRemoveAll(b *testing.B) {
     sets := make([]Set, b.N)
     keys := make([][]interface{}, b.N)
+    data := genKeyData(1000)
 
     for i := 0; i < b.N; i++ {
         sets[i] = New()
-        sets[i].AddAll(genKeyData(1000)...)
+        sets[i].AddAll(data...)
         keys[i] = genKeyData(1000)
     }
 
@@ -257,19 +266,20 @@ func TestClear(t *testing.T) {
 }
 
 func BenchmarkClear(b *testing.B) {
-    println(b.N)
-    sets := make([]Set, b.N)
-
-    for i := 0; i < b.N; i++ {
+    sets := make([]Set, 1000)
+    for i := 0; i < len(sets); i++ {
         sets[i] = New()
-        sets[i].AddAll(genKeyData(100)...)
     }
-
-    println("resetting timer")
     b.ResetTimer()
 
-    for i := 0; i < b.N; i++ {
-        if err := sets[i].Clear(); err != nil {
+    for i, j := 0, 0; i < b.N; i, j = i+1, j+1 {
+        if i % 1000 == 0 {
+            b.StopTimer()
+            fillSets(sets)
+            j = 0
+            b.StartTimer()
+        }
+        if err := sets[j].Clear(); err != nil {
             b.Fail()
         }
     }
