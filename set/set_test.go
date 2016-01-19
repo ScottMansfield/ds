@@ -1,8 +1,10 @@
-package set
+package set_test
 
 import "math/rand"
 import "testing"
 import "time"
+
+import set "."
 
 // utility functions
 var r *rand.Rand
@@ -20,7 +22,7 @@ func genKeyData(num int) []interface{} {
     return ret
 }
 
-func fillSets(s []Set) {
+func fillSets(s []set.Set) {
     data := genKeyData(100)
     for i := 0; i < len(s); i++ {
         s[i].AddAll(data...)
@@ -30,17 +32,17 @@ func fillSets(s []Set) {
 // Tests
 
 func TestNewSet(t *testing.T) {
-    New()
+    set.New()
 }
 
 func BenchmarkNewSet(b *testing.B) {
     for i := 0; i < b.N; i++ {
-        New()
+        set.New()
     }
 }
 
 func TestAdd(t *testing.T) {
-    s := New()
+    s := set.New()
     if err := s.Add(4); err != nil {
         t.Fail()
     }
@@ -60,7 +62,7 @@ func TestAdd(t *testing.T) {
 }
 
 func BenchmarkAdd(b *testing.B) {
-    s := New()
+    s := set.New()
     for i := 0; i < b.N; i++ {
         if err := s.Add(i); err != nil {
             b.Fail()
@@ -69,7 +71,7 @@ func BenchmarkAdd(b *testing.B) {
 }
 
 func TestAddAll(t *testing.T) {
-    s := New()
+    s := set.New()
     data := genKeyData(10)
     if err := s.AddAll(data...); err != nil {
         t.Fail()
@@ -80,7 +82,7 @@ func TestAddAll(t *testing.T) {
 }
 
 func BenchmarkAddAll(b *testing.B) {
-    s := New()
+    s := set.New()
     data := genKeyData(1000)
     b.ResetTimer()
 
@@ -92,7 +94,7 @@ func BenchmarkAddAll(b *testing.B) {
 }
 
 func TestContains(t *testing.T) {
-    s := New()
+    s := set.New()
     s.Add(4)
 
     c, err := s.Contains(4)
@@ -107,7 +109,7 @@ func TestContains(t *testing.T) {
 }
 
 func BenchmarkContains(b *testing.B) {
-    s := New()
+    s := set.New()
     s.Add(4)
 
     for i := 0; i < b.N/2; i++ {
@@ -126,7 +128,7 @@ func BenchmarkContains(b *testing.B) {
 }
 
 func TestContainsAll(t *testing.T) {
-    s := New()
+    s := set.New()
     data := genKeyData(10)
 
     s.AddAll(data...)
@@ -146,7 +148,7 @@ func TestContainsAll(t *testing.T) {
 }
 
 func BenchmarkContainsAll(b *testing.B) {
-    s := New()
+    s := set.New()
     data := genKeyData(1000)
     s.AddAll(data...)
     b.ResetTimer()
@@ -172,7 +174,7 @@ func BenchmarkContainsAll(b *testing.B) {
 }
 
 func TestRemove(t *testing.T) {
-    s := New()
+    s := set.New()
 
     // Remove something that doesn't exist
     if err := s.Remove(4); err != nil {
@@ -195,10 +197,10 @@ func TestRemove(t *testing.T) {
 // Not perfect because different implementations might
 // be slower the larger it gets
 func BenchmarkRemove(b *testing.B) {
-    sets := make([]Set, b.N)
+    sets := make([]set.Set, b.N)
 
     for i := 0; i < b.N; i++ {
-        sets[i] = New()
+        sets[i] = set.New()
         sets[i].Add(4)
     }
 
@@ -212,7 +214,7 @@ func BenchmarkRemove(b *testing.B) {
 }
 
 func TestRemoveAll(t *testing.T) {
-    s := New()
+    s := set.New()
     data := genKeyData(1000)
     s.AddAll(data...)
 
@@ -234,12 +236,12 @@ func TestRemoveAll(t *testing.T) {
 }
 
 func BenchmarkRemoveAll(b *testing.B) {
-    sets := make([]Set, b.N)
+    sets := make([]set.Set, b.N)
     keys := make([][]interface{}, b.N)
     data := genKeyData(100)
 
     for i := 0; i < b.N; i++ {
-        sets[i] = New()
+        sets[i] = set.New()
         sets[i].AddAll(data...)
         keys[i] = genKeyData(100)
     }
@@ -254,7 +256,7 @@ func BenchmarkRemoveAll(b *testing.B) {
 }
 
 func TestClear(t *testing.T) {
-    s := New()
+    s := set.New()
     s.AddAll(genKeyData(1000)...)
 
     if err := s.Clear(); err != nil {
@@ -276,9 +278,9 @@ func TestClear(t *testing.T) {
 }
 
 func BenchmarkClear(b *testing.B) {
-    sets := make([]Set, 1000)
+    sets := make([]set.Set, 1000)
     for i := 0; i < len(sets); i++ {
-        sets[i] = New()
+        sets[i] = set.New()
     }
     b.ResetTimer()
 
@@ -296,7 +298,7 @@ func BenchmarkClear(b *testing.B) {
 }
 
 func TestSize(t *testing.T) {
-    s := New()
+    s := set.New()
     s.Add(4)
     size, err := s.Size()
     if err != nil {
@@ -308,7 +310,7 @@ func TestSize(t *testing.T) {
 }
 
 func BenchmarkSize(b *testing.B) {
-    s := New()
+    s := set.New()
     s.AddAll(genKeyData(1000)...)
     b.ResetTimer()
 
@@ -320,7 +322,7 @@ func BenchmarkSize(b *testing.B) {
 }
 
 func TestIsEmpty(t *testing.T) {
-    s := New()
+    s := set.New()
 
     empty, err := s.IsEmpty()
     if err != nil {
@@ -342,8 +344,8 @@ func TestIsEmpty(t *testing.T) {
 }
 
 func BenchmarkIsEmpty(b *testing.B) {
-    s1 := New()
-    s2 := New()
+    s1 := set.New()
+    s2 := set.New()
     s2.AddAll(genKeyData(1000)...)
     b.ResetTimer()
 
@@ -369,7 +371,7 @@ func BenchmarkIsEmpty(b *testing.B) {
 }
 
 func TestToSlice(t *testing.T) {
-    s := New()
+    s := set.New()
     s.Add(4)
 
     slice, err := s.ToSlice()
@@ -392,7 +394,7 @@ func TestToSlice(t *testing.T) {
 }
 
 func BenchmarkToSlice(b *testing.B) {
-    s := New()
+    s := set.New()
     s.AddAll(genKeyData(100)...)
     b.ResetTimer()
 
