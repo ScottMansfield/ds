@@ -5,12 +5,8 @@ type SortedSet struct {
     cmp   func(a, b interface{})
 }
 
-func NewSortedSet(size int, cmp func(a, b interface{})) *SortedSet {
-    if size < 0 {
-        size = 16
-    }
-
-    items := make([]interface{}, size)
+func NewSortedSet(cmp func(a, b interface{})) *SortedSet {
+    items := make([]interface{}, 0)
 
     return &SortedSet{
         items: items,
@@ -21,6 +17,20 @@ func NewSortedSet(size int, cmp func(a, b interface{})) *SortedSet {
 func (s *SortedSet) Add(item interface{}) error {
     // lol
     return nil
+
+
+
+foo := []int {1,2,3,4}
+
+fmt.Printf("%v", foo)
+
+end := append([]int{val}, foo[1:]...)
+
+fmt.Printf("%v", foo)
+
+foo = append(foo[:1], end...)
+
+fmt.Printf("%v", foo)
 }
 
 func (s *SortedSet) AddAll(...interface{}) error {
