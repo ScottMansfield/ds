@@ -38,8 +38,8 @@ func (s *SyncMapSet) AddAll(items ...interface{}) error {
 }
 
 func (s *SyncMapSet) Contains(item interface{}) (bool, error) {
-    s.lock.Lock()
-    defer s.lock.Unlock()
+    s.lock.RLock()
+    defer s.lock.RUnlock()
 
     _, ok := s.items[item]
 
@@ -47,8 +47,8 @@ func (s *SyncMapSet) Contains(item interface{}) (bool, error) {
 }
 
 func (s *SyncMapSet) ContainsAll(items ...interface{}) (bool, error) {
-    s.lock.Lock()
-    defer s.lock.Unlock()
+    s.lock.RLock()
+    defer s.lock.RUnlock()
 
     for _, item := range items {
         if _, ok := s.items[item]; !ok {
@@ -97,8 +97,8 @@ func (s *SyncMapSet) IsEmpty() (bool, error) {
 }
 
 func (s *SyncMapSet) ToSlice() ([]interface{}, error) {
-    s.lock.Lock()
-    defer s.lock.Unlock()
+    s.lock.RLock()
+    defer s.lock.RUnlock()
 
     ret := make([]interface{}, 0, len(s.items))
     for item, _ := range s.items {
