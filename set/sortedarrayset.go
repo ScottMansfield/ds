@@ -5,7 +5,7 @@ type SortedArraySet struct {
     cmp   func(a, b interface{})
 }
 
-func NewSortedArraySet(cmp func(a, b interface{})) *SortedArraySet {
+func NewSortedArraySet(cmp func(a, b interface{}) int) *SortedArraySet {
     items := make([]interface{}, 0)
 
     return &SortedArraySet{
@@ -17,20 +17,6 @@ func NewSortedArraySet(cmp func(a, b interface{})) *SortedArraySet {
 func (s *SortedArraySet) Add(item interface{}) error {
     // lol
     return nil
-
-
-
-foo := []int {1,2,3,4}
-
-fmt.Printf("%v", foo)
-
-end := append([]int{val}, foo[1:]...)
-
-fmt.Printf("%v", foo)
-
-foo = append(foo[:1], end...)
-
-fmt.Printf("%v", foo)
 }
 
 func (s *SortedArraySet) AddAll(...interface{}) error {
