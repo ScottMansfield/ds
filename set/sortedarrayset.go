@@ -2,7 +2,7 @@ package set
 
 type SortedArraySet struct {
     items []interface{}
-    cmp   func(a, b interface{})
+    cmp   func(a, b interface{}) int
 }
 
 func NewSortedArraySet(cmp func(a, b interface{}) int) *SortedArraySet {

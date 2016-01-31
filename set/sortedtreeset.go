@@ -15,7 +15,7 @@ type node struct {
     data   interface{}
 }
 
-var leaf = node{
+var leaf = &node{
     color:  black,
     parent: nil,
     left:   nil,
@@ -47,6 +47,8 @@ func (s *SortedTreeSet) Add(item interface{}) error {
     } else {
         insert(s.root, item, s.cmp)
     }
+
+    return nil
 }
 
 func insert(root *node, item interface{}, cmp func(a, b interface{}) int) error {
