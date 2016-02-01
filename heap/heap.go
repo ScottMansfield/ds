@@ -1,8 +1,14 @@
 package heap
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-var ErrKeyExists = errors.New("Key already exists")
+var (
+	ErrKeyExists       = errors.New("Key already exists")
+	ErrKeyDoesNotExist = errors.New("Key does not exist")
+)
 
 type heapNode struct {
 	parent *heapNode
@@ -33,6 +39,24 @@ func NewMaxHeap() *MaxHeap {
 	}
 }
 
+func (m *MaxHeap) printInOrder() {
+	if len(m.data) == 0 {
+		return
+	}
+	printInOrderRec(m.data[0], 0)
+	fmt.Println()
+}
+
+func printInOrderRec(node *heapNode, level int) {
+	if node == nil {
+		return
+	}
+
+	printInOrderRec(node.left, level+1)
+	fmt.Printf("%s(%d,%d) ", node.key, level, node.rank)
+	printInOrderRec(node.right, level+1)
+}
+
 // Adds a new node into the heap. If the key already exists, returns ErrKeyExists
 func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 	if _, ok := m.keyMap[key]; ok {
@@ -55,8 +79,9 @@ func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 		return nil
 	}
 
-	node.parent = m.data[idx/2]
-	if idx&0x1 == 1 {
+	parentIdx := (idx - 1) / 2
+	node.parent = m.data[parentIdx]
+	if idx&0x1 == 0 {
 		node.parent.right = node
 	} else {
 		node.parent.left = node
@@ -67,13 +92,70 @@ func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 	return nil
 }
 
-func (m *MaxHeap) ChangeRank(key string, amount int) {
-	// lol
+func (m *MaxHeap) ChangeRank(key string, amount int) error {
+	if amount == 0 {
+		return nil
+	}
+
+	node, ok := m.keyMap[key]
+	if !ok {
+		return ErrKeyDoesNotExist
+	}
+
+	node.rank += amount
+
+	if amount > 0 {
+		m.heapifyUp(node)
+	} else {
+		m.heapifyDown(node)
+	}
+
+	return nil
 }
 
-func (m *MaxHeap) ExtractMax() heapNode {
-	// lol
-	return heapNode{}
+func (m *MaxHeap) ExtractMax() *Val {
+	if len(m.data) == 0 {
+		return nil
+	}
+
+	// take care of this upfront to avoid bugs on different return paths
+	m.size--
+
+	// Copy data for return value
+	root := m.data[0]
+	retval := &Val{
+		key:  root.key,
+		rank: root.rank,
+		data: root.data,
+	}
+
+	// Remove key from the key map so tests for existence work properly
+	delete(m.keyMap, root.key)
+
+	// shortcut root removal
+	if len(m.data) == 1 {
+		m.data = make([]*heapNode, 0)
+		return retval
+	}
+
+	// Swap "last" node into root
+	idx := len(m.data) - 1
+	lastNode := m.data[idx]
+	m.swapNodes(root, lastNode)
+
+	// shorten slice to exclude last node
+	m.data = m.data[:len(m.data)-1]
+
+	// unhook the parent
+	if idx&0x1 == 0 {
+		lastNode.parent.right = nil
+	} else {
+		lastNode.parent.left = nil
+	}
+
+	m.heapifyDown(root)
+
+	return retval
 }
 
 func (m *MaxHeap) Size() int {
@@ -81,9 +163,9 @@ func (m *MaxHeap) Size() int {
 }
 
 func (m *MaxHeap) PeekMax() *Val {
-    if len(m.data) == 0 {
-        return nil
-    }
+	if len(m.data) == 0 {
+		return nil
+	}
 	root := m.data[0]
 	return &Val{
 		key:  root.key,
@@ -92,37 +174,41 @@ func (m *MaxHeap) PeekMax() *Val {
 	}
 }
 
-func (m *MaxHeap) TopN(n int) []heapNode {
-	// Make a copy to not disturb the heap
-	temp := make([]*heapNode, len(m.data), len(m.data))
-	for i, data := range m.data {
-		temp[i] = data
-	}
-	tempHeap := &MaxHeap{
-		data: temp,
-		size: len(temp),
-	}
-
-	if tempHeap.Size() > n {
-		n = tempHeap.Size()
-	}
-
-	ret := make([]heapNode, n, n)
-	for i := 0; i < n; i++ {
-		ret[i] = tempHeap.ExtractMax()
-	}
-
-	return nil
-}
-
 func (m *MaxHeap) heapifyUp(node *heapNode) {
+	// stop at the root
 	if node.parent == nil {
 		return
 	}
 
+	// stop when the parent node is no longer bigger
 	if node.parent.rank < node.rank {
-		m.swapNodes(node, node.parent)
+		m.swapNodes(node.parent, node)
 		m.heapifyUp(node.parent)
+	}
+}
+
+func (m *MaxHeap) heapifyDown(node *heapNode) {
+	if node.left == nil && node.right == nil {
+		return
+	}
+
+	if node.right == nil {
+		if node.left.rank > node.rank {
+			m.swapNodes(node.left, node)
+		}
+		return
+	}
+
+	if node.left.rank > node.right.rank {
+		if node.left.rank > node.rank {
+			m.swapNodes(node.left, node)
+			m.heapifyDown(node.left)
+		}
+	} else {
+		if node.right.rank > node.rank {
+			m.swapNodes(node.right, node)
+			m.heapifyDown(node.right)
+		}
 	}
 }
 
