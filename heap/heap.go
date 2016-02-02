@@ -19,10 +19,18 @@ type heapNode struct {
 	data   interface{}
 }
 
+func (h *heapNode) clone() *heapNode {
+	return &heapNode{
+		rank: h.rank,
+		key:  h.key,
+		data: h.data,
+	}
+}
+
 type Val struct {
-	rank int
-	key  string
-	data interface{}
+	Rank int
+	Key  string
+	Data interface{}
 }
 
 type MaxHeap struct {
@@ -36,6 +44,34 @@ func NewMaxHeap() *MaxHeap {
 		data:   make([]*heapNode, 0),
 		keyMap: make(map[string]*heapNode),
 		size:   0,
+	}
+}
+
+func (m *MaxHeap) Clone() *MaxHeap {
+	data := make([]*heapNode, len(m.data))
+	keyMap := make(map[string]*heapNode)
+
+	for i := 0; i < len(m.data); i++ {
+		temp := m.data[i].clone()
+		data[i] = temp
+
+		keyMap[temp.key] = temp
+
+		if i > 0 {
+			parentIdx := (i - 1) / 2
+			temp.parent = data[parentIdx]
+			if i&0x1 == 0 {
+				temp.parent.right = temp
+			} else {
+				temp.parent.left = temp
+			}
+		}
+	}
+
+	return &MaxHeap{
+		data:   data,
+		keyMap: keyMap,
+		size:   len(data),
 	}
 }
 
@@ -53,8 +89,38 @@ func printInOrderRec(node *heapNode, level int) {
 	}
 
 	printInOrderRec(node.left, level+1)
-	fmt.Printf("%s(%d,%d) ", node.key, level, node.rank)
+	fmt.Printf("%s(l:%d,r:%d) ", node.key, level, node.rank)
 	printInOrderRec(node.right, level+1)
+}
+
+func (m *MaxHeap) printLevels() {
+	q := make(chan *heapNode, m.size/2)
+	levelSize := 1
+	numInLevel := 0
+
+	q <- m.data[0]
+
+	for {
+		select {
+		case node := <-q:
+			numInLevel++
+			fmt.Printf("%s(r:%d) ", node.key, node.rank)
+			if node.left != nil {
+				q <- node.left
+			}
+			if node.right != nil {
+				q <- node.right
+			}
+
+			if numInLevel >= levelSize {
+				fmt.Println()
+				levelSize <<= 1
+				numInLevel = 0
+			}
+		default:
+			return
+		}
+	}
 }
 
 // Adds a new node into the heap. If the key already exists, returns ErrKeyExists
@@ -124,9 +190,9 @@ func (m *MaxHeap) ExtractMax() *Val {
 	// Copy data for return value
 	root := m.data[0]
 	retval := &Val{
-		key:  root.key,
-		rank: root.rank,
-		data: root.data,
+		Key:  root.key,
+		Rank: root.rank,
+		Data: root.data,
 	}
 
 	// Remove key from the key map so tests for existence work properly
@@ -162,15 +228,19 @@ func (m *MaxHeap) Size() int {
 	return m.size
 }
 
+func (m *MaxHeap) Empty() bool {
+	return m.size == 0
+}
+
 func (m *MaxHeap) PeekMax() *Val {
 	if len(m.data) == 0 {
 		return nil
 	}
 	root := m.data[0]
 	return &Val{
-		key:  root.key,
-		rank: root.rank,
-		data: root.data,
+		Key:  root.key,
+		Rank: root.rank,
+		Data: root.data,
 	}
 }
 
