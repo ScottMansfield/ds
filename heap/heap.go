@@ -93,8 +93,12 @@ func printInOrderRec(node *heapNode, level int) {
 	printInOrderRec(node.right, level+1)
 }
 
-func (m *MaxHeap) printLevels() {
-	q := make(chan *heapNode, m.size/2)
+func (m *MaxHeap) PrintLevels() {
+	if m.size == 0 {
+		return
+	}
+
+	q := make(chan *heapNode, m.size/2+1)
 	levelSize := 1
 	numInLevel := 0
 
@@ -118,6 +122,7 @@ func (m *MaxHeap) printLevels() {
 				numInLevel = 0
 			}
 		default:
+			fmt.Println()
 			return
 		}
 	}
@@ -136,6 +141,8 @@ func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 		rank: rank,
 		data: data,
 	}
+
+	m.keyMap[key] = node
 
 	idx := len(m.data)
 	m.data = append(m.data, node)
@@ -250,7 +257,7 @@ func (m *MaxHeap) heapifyUp(node *heapNode) {
 		return
 	}
 
-	// stop when the parent node is no longer bigger
+	// stop when the parent node is no longer smaller
 	if node.parent.rank < node.rank {
 		m.swapNodes(node.parent, node)
 		m.heapifyUp(node.parent)
