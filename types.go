@@ -1,5 +1,5 @@
 package ds
 
 type Sizer interface {
-    Size()
+	Size()
 }
