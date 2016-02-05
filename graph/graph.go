@@ -1,6 +1,9 @@
 package graph
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/ScottMansfield/ds/heap"
 	"github.com/ScottMansfield/ds/set"
 )
@@ -45,6 +48,18 @@ func (d *DiGraph) AddEdge(from, to string) {
 	}
 }
 
+func (d *DiGraph) WriteDOT(w io.Writer) {
+	fmt.Fprintln(w, "digraph goimports {")
+	for src, dsts := range d.out {
+		dstSlice, _ := dsts.ToSlice()
+		for _, dst := range dstSlice {
+			fmt.Fprintf(w, "\t\"%s\" -> \"%s\";\n", src, dst)
+		}
+	}
+
+	fmt.Fprintln(w, "}")
+}
+
 type RanksResult struct {
 	Key  string
 	Rank int
@@ -55,9 +70,6 @@ func (d *DiGraph) TopNInRanks(num int) []RanksResult {
 	if num < 0 {
 		panic("Number of requested nodes must be 0 or greater")
 	}
-	if num == 0 || d.inHeap.Size() == 0 {
-		return make([]RanksResult, 0)
-	}
 
 	heap := d.inHeap.Clone()
 	return topN(heap, num)
@@ -67,9 +79,6 @@ func (d *DiGraph) TopNInRanks(num int) []RanksResult {
 func (d *DiGraph) TopNOutRanks(num int) []RanksResult {
 	if num < 0 {
 		panic("Number of requested nodes must be 0 or greater")
-	}
-	if num == 0 || d.outHeap.Size() == 0 {
-		return make([]RanksResult, 0)
 	}
 
 	heap := d.outHeap.Clone()
