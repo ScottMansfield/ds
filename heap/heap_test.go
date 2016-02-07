@@ -123,7 +123,7 @@ func TestMaxHeapClone(t *testing.T) {
 
 	clone := m.Clone()
 
-	m.printLevels()
+	m.PrintLevels()
 
 	m.ExtractMax()
 

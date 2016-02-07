@@ -11,12 +11,9 @@ var (
 )
 
 type heapNode struct {
-	parent *heapNode
-	left   *heapNode
-	right  *heapNode
-	rank   int
-	key    string
-	data   interface{}
+	rank int
+	key  string
+	data interface{}
 }
 
 func (h *heapNode) clone() *heapNode {
@@ -27,6 +24,18 @@ func (h *heapNode) clone() *heapNode {
 	}
 }
 
+func parent(idx int) int {
+	return (idx - 1) / 2
+}
+
+func left(idx int) int {
+	return idx*2 + 1
+}
+
+func right(idx int) int {
+	return idx*2 + 2
+}
+
 type Val struct {
 	Rank int
 	Key  string
@@ -35,37 +44,27 @@ type Val struct {
 
 type MaxHeap struct {
 	data   []*heapNode
-	keyMap map[string]*heapNode
+	keyMap map[string]int
 	size   int
 }
 
 func NewMaxHeap() *MaxHeap {
 	return &MaxHeap{
 		data:   make([]*heapNode, 0),
-		keyMap: make(map[string]*heapNode),
+		keyMap: make(map[string]int),
 		size:   0,
 	}
 }
 
 func (m *MaxHeap) Clone() *MaxHeap {
 	data := make([]*heapNode, len(m.data))
-	keyMap := make(map[string]*heapNode)
+	keyMap := make(map[string]int)
 
 	for i := 0; i < len(m.data); i++ {
 		temp := m.data[i].clone()
 		data[i] = temp
 
-		keyMap[temp.key] = temp
-
-		if i > 0 {
-			parentIdx := (i - 1) / 2
-			temp.parent = data[parentIdx]
-			if i&0x1 == 0 {
-				temp.parent.right = temp
-			} else {
-				temp.parent.left = temp
-			}
-		}
+		keyMap[temp.key] = i
 	}
 
 	return &MaxHeap{
@@ -79,18 +78,22 @@ func (m *MaxHeap) printInOrder() {
 	if len(m.data) == 0 {
 		return
 	}
-	printInOrderRec(m.data[0], 0)
+	printInOrderRec(0, 0, m.data)
 	fmt.Println()
 }
 
-func printInOrderRec(node *heapNode, level int) {
-	if node == nil {
+func printInOrderRec(idx, level int, data []*heapNode) {
+	if idx >= len(data) {
 		return
 	}
 
-	printInOrderRec(node.left, level+1)
+	node := data[idx]
+	left := left(idx)
+	right := right(idx)
+
+	printInOrderRec(left, level+1, data)
 	fmt.Printf("%s(l:%d,r:%d) ", node.key, level, node.rank)
-	printInOrderRec(node.right, level+1)
+	printInOrderRec(right, level+1, data)
 }
 
 func (m *MaxHeap) PrintLevels() {
@@ -98,22 +101,28 @@ func (m *MaxHeap) PrintLevels() {
 		return
 	}
 
-	q := make(chan *heapNode, m.size/2+1)
+	q := make(chan int, m.size/2+1)
 	levelSize := 1
 	numInLevel := 0
 
-	q <- m.data[0]
+	q <- 0
 
 	for {
 		select {
-		case node := <-q:
+		case idx := <-q:
 			numInLevel++
+
+			node := m.data[idx]
+			left := left(idx)
+			right := right(idx)
+
 			fmt.Printf("%s(r:%d) ", node.key, node.rank)
-			if node.left != nil {
-				q <- node.left
+
+			if left < len(m.data) {
+				q <- left
 			}
-			if node.right != nil {
-				q <- node.right
+			if right < len(m.data) {
+				q <- right
 			}
 
 			if numInLevel >= levelSize {
@@ -142,9 +151,8 @@ func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 		data: data,
 	}
 
-	m.keyMap[key] = node
-
 	idx := len(m.data)
+	m.keyMap[key] = idx
 	m.data = append(m.data, node)
 
 	// If this is the first node, return
@@ -152,15 +160,7 @@ func (m *MaxHeap) Add(key string, rank int, data interface{}) error {
 		return nil
 	}
 
-	parentIdx := (idx - 1) / 2
-	node.parent = m.data[parentIdx]
-	if idx&0x1 == 0 {
-		node.parent.right = node
-	} else {
-		node.parent.left = node
-	}
-
-	m.heapifyUp(node)
+	m.heapifyUp(idx)
 
 	return nil
 }
@@ -170,17 +170,18 @@ func (m *MaxHeap) ChangeRank(key string, amount int) error {
 		return nil
 	}
 
-	node, ok := m.keyMap[key]
+	idx, ok := m.keyMap[key]
 	if !ok {
 		return ErrKeyDoesNotExist
 	}
 
+	node := m.data[idx]
 	node.rank += amount
 
 	if amount > 0 {
-		m.heapifyUp(node)
+		m.heapifyUp(idx)
 	} else {
-		m.heapifyDown(node)
+		m.heapifyDown(idx)
 	}
 
 	return nil
@@ -212,21 +213,12 @@ func (m *MaxHeap) ExtractMax() *Val {
 	}
 
 	// Swap "last" node into root
-	idx := len(m.data) - 1
-	lastNode := m.data[idx]
-	m.swapNodes(root, lastNode)
+	m.swapNodes(0, len(m.data)-1)
 
 	// shorten slice to exclude last node
 	m.data = m.data[:len(m.data)-1]
 
-	// unhook the parent
-	if idx&0x1 == 0 {
-		lastNode.parent.right = nil
-	} else {
-		lastNode.parent.left = nil
-	}
-
-	m.heapifyDown(root)
+	m.heapifyDown(0)
 
 	return retval
 }
@@ -251,59 +243,63 @@ func (m *MaxHeap) PeekMax() *Val {
 	}
 }
 
-func (m *MaxHeap) heapifyUp(node *heapNode) {
+func (m *MaxHeap) heapifyUp(idx int) {
 	// stop at the root
-	if node.parent == nil {
+	if idx == 0 {
 		return
 	}
+
+	pidx := parent(idx)
+	parent := m.data[pidx]
+	node := m.data[idx]
 
 	// stop when the parent node is no longer smaller
-	if node.parent.rank < node.rank {
-		m.swapNodes(node.parent, node)
-		m.heapifyUp(node.parent)
+	if parent.rank < node.rank {
+		m.swapNodes(idx, pidx)
+		m.heapifyUp(pidx)
 	}
 }
 
-func (m *MaxHeap) heapifyDown(node *heapNode) {
-	if node.left == nil && node.right == nil {
+func (m *MaxHeap) heapifyDown(idx int) {
+	// If there's no children, break
+	lidx := left(idx)
+	if lidx >= len(m.data) {
 		return
 	}
 
-	if node.right == nil {
-		if node.left.rank > node.rank {
-			m.swapNodes(node.left, node)
+	node := m.data[idx]
+	ridx := right(idx)
+	left := m.data[lidx]
+
+	// simpler case of one child. The left one.
+	if ridx >= len(m.data) {
+		if left.rank > node.rank {
+			m.swapNodes(lidx, idx)
 		}
 		return
 	}
 
-	if node.left.rank > node.right.rank {
-		if node.left.rank > node.rank {
-			m.swapNodes(node.left, node)
-			m.heapifyDown(node.left)
+	right := m.data[ridx]
+
+	if left.rank > right.rank {
+		if left.rank > node.rank {
+			m.swapNodes(lidx, idx)
+			m.heapifyDown(lidx)
 		}
 	} else {
-		if node.right.rank > node.rank {
-			m.swapNodes(node.right, node)
-			m.heapifyDown(node.right)
+		if right.rank > node.rank {
+			m.swapNodes(ridx, idx)
+			m.heapifyDown(ridx)
 		}
 	}
 }
 
-// Swap the data inside to avoid having to reach out and touch many other nodes
-// to update left / right / parent pointers
-func (m *MaxHeap) swapNodes(a, b *heapNode) {
-	tempKey := a.key
-	tempRank := a.rank
-	tempData := a.data
+// Swap two nodes while ensuring the map stays up to date
+func (m *MaxHeap) swapNodes(a, b int) {
+	temp := m.data[a]
+	m.data[a] = m.data[b]
+	m.data[b] = temp
 
-	a.key = b.key
-	a.rank = b.rank
-	a.data = b.data
-
-	b.key = tempKey
-	b.rank = tempRank
-	b.data = tempData
-
-	m.keyMap[a.key] = a
-	m.keyMap[b.key] = b
+	m.keyMap[m.data[a].key] = a
+	m.keyMap[m.data[b].key] = b
 }
