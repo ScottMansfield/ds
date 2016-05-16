@@ -1,0 +1,15 @@
+# Clone the repo in just the right spot for Go to pick
+# it up as a part of the $GOPATH
+clone:
+  path: gopath/src/github.com/ScottMansfield/ds
+
+build:
+  image: golang
+  pull: true
+  environment:
+    - GOPATH=/drone/src/gopath
+  commands:
+    # hack until environment actually works
+    - export GOPATH=/drone/src/gopath
+    - go build github.com/ScottMansfield/ds/...
+    - go test github.com/ScottMansfield/ds/...
