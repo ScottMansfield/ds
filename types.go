@@ -13,5 +13,5 @@ const (
 )
 
 type Comparable interface {
-	Compare(a, b interface{}) Res
+	Compare(b Comparable) Res
 }
